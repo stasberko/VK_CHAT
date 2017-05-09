@@ -46,9 +46,16 @@ def get_GooglePicture(as_q="Python"):
         img.append(json.loads(i)["ou"])
     return img
 
-if __name__=="__main__":
-    vk = vk_api.VkApi(token=token)
-    vk.auth()
+
+def send_photo(photo_name, user_id=my_id):
+    photo_name = ["D:\MyFile\\3.jpg", "D:\LIRA\A9DKV_S0_X8.jpg", ]
+    photos = upload.photo_messages(photo_name)
+    for upl in photos:
+        vk.method('messages.send', {'user_id': user_id, 'attachment': "photo{}_{}".format(upl['owner_id'], upl['id'])})
 
 
+#if __name__=="__main__":
+vk = vk_api.VkApi(token=token)
+vk.auth()
+upload = vk_api.VkUpload(vk)
 
