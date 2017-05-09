@@ -4,6 +4,7 @@ import json
 import requests
 import os
 import re
+import time
 from lxml import html
 from login import *
 
@@ -57,7 +58,6 @@ def send_photo(photo_name, user_id=my_id):
         new_name = re.findall(r"([\d]?\.(jpeg|png|jpg|gif))", new_name)[0][0]###################################################################
         with open(new_name, "wb") as fl:
             fl.write(upl.content)
-            print(new_name)
         try:
             upld = upload.photo_messages(new_name)[0]
         except vk_api.exceptions.ApiError:
@@ -65,12 +65,31 @@ def send_photo(photo_name, user_id=my_id):
         else:
             os.remove(new_name)
             photo_mas.append("photo{}_{}".format(upld['owner_id'], upld['id']))
-
     vk.method('messages.send', {'user_id': user_id, 'attachment': ",".join(photo_mas)})
 
 
-#if __name__=="__main__": os.path.split(img)[1]
-vk = vk_api.VkApi(token=token)
-vk.auth()
-upload = vk_api.VkUpload(vk)
+def run():
+    values = {'out': 0, 'count': 1, 'time_offset': 30}
+    while True:
+        response = vk.method('messages.get', values)
+        if response['items']:
+            values['last_message_id'] = response['items'][0]['id']
+            print(response['items'])
+        for item in response['items']:
+            info = get_GoogleInfo(item["body"])[0]
+            img = get_GooglePicture(item["body"])
+            for i in range(len(info)-1):
+                write_msg(item['user_id'], "*{} / {} / {}".format(info['title'][i], info['short_info'][i], info['url'][i]))
+            send_photo(img, item['user_id'])
+        time.sleep(0.5)
+
+if __name__=="__main__":
+    vk = vk_api.VkApi(token=token)
+    vk.auth()
+    upload = vk_api.VkUpload(vk)
+    run()
+
+
+
+
 
