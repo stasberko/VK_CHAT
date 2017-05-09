@@ -2,6 +2,8 @@
 import vk_api
 import json
 import requests
+import os
+import re
 from lxml import html
 from login import *
 
@@ -48,13 +50,26 @@ def get_GooglePicture(as_q="Python"):
 
 
 def send_photo(photo_name, user_id=my_id):
-    photo_name = ["D:\MyFile\\3.jpg", "D:\LIRA\A9DKV_S0_X8.jpg", ]
-    photos = upload.photo_messages(photo_name)
-    for upl in photos:
-        vk.method('messages.send', {'user_id': user_id, 'attachment': "photo{}_{}".format(upl['owner_id'], upl['id'])})
+    photo_mas = []
+    for i, img in enumerate(photo_name):
+        upl = requests.get(img)
+        new_name = str(i)+os.path.splitext(img)[1]
+        new_name = re.findall(r"([\d]?\.(jpeg|png|jpg|gif))", new_name)[0][0]###################################################################
+        with open(new_name, "wb") as fl:
+            fl.write(upl.content)
+            print(new_name)
+        try:
+            upld = upload.photo_messages(new_name)[0]
+        except vk_api.exceptions.ApiError:
+            pass
+        else:
+            os.remove(new_name)
+            photo_mas.append("photo{}_{}".format(upld['owner_id'], upld['id']))
+
+    vk.method('messages.send', {'user_id': user_id, 'attachment': ",".join(photo_mas)})
 
 
-#if __name__=="__main__":
+#if __name__=="__main__": os.path.split(img)[1]
 vk = vk_api.VkApi(token=token)
 vk.auth()
 upload = vk_api.VkUpload(vk)
