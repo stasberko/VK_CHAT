@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import vk_api
-import time
-from bs4 import BeautifulSoup
+import json
 import requests
+from lxml import html
 from login import *
+
 
 def write_msg(user_id, s):
     vk.method('messages.send', {'user_id': user_id, 'message': s})
@@ -16,28 +17,38 @@ def is_user_memb(user_id):
     else:
         return False
 
-vk = vk_api.VkApi(token=token)
-vk.auth()
-values = {'out': 0, 'count': 100, 'time_offset': 0}
 
-text = "Python"
-url = "https://www.google.com/search"
-headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0'}
-r = requests.get(url, headers = headers)
-dat = dict(hl="ru",as_qdr="all",as_occt="any",safe="images",as_q="Python",num="3")
-res = requests.get(url, params=dat, headers=headers)
-
-
-soup = BeautifulSoup(res.text, "lxml")
-res_list = soup.findAll('div', {'class': 'g'})
-
-tsiu=[]
-tm_dct={}
-for i in res_list:
-    tm_dct['url'] = i.find('h3', {'class': 'r'}).find("a").get("href")
-    tm_dct['title'] = i.find('h3', {'class': 'r'}).find("a").text
-    tm_dct['short_info'] = i.find('span', {'class': 'st'}).text
+def get_GoogleInfo(as_q="Python", num = "3"):
+    url = "https://www.google.com/search"
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0'}
+    dat = dict(hl="ru", as_qdr="all", as_occt="any", safe="images", as_q=as_q, num=str(num))
+    res = requests.get(url, params=dat, headers=headers)
+    tsiu = []
+    tm_dct = {}
+    tree = html.fromstring(res.content.decode())
+    tm_dct['url'] = tree.xpath('//h3[@class = "r"]/a/@href')
+    tm_dct['title'] = tree.xpath('//h3[@class = "r"]/a/text()')
+    tm_dct['short_info'] = tree.xpath('//span[@class = "st"]/text()')
     tsiu.append(tm_dct.copy())
+    return tsiu
 
-for i in tsiu:
-    print(i)
+
+def get_GooglePicture(as_q="Python"):
+    url = "https://www.google.ru/search"
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0'}
+    dat = dict(as_st="y", tbm="isch", as_occt="any", safe="images", as_q=as_q, num="3")
+    res = requests.get(url, params=dat, headers=headers)
+
+    tree = html.fromstring(res.content.decode())
+    f1 = tree.xpath('//div[@class = "rg_meta"]/text()')
+    img = []
+    for i in f1[:3]:
+        img.append(json.loads(i)["ou"])
+    return img
+
+if __name__=="__main__":
+    vk = vk_api.VkApi(token=token)
+    vk.auth()
+
+
+
