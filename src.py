@@ -5,6 +5,7 @@ import requests
 import os
 import re
 import collections
+from PIL import ImageFont, ImageDraw, Image
 from lxml import html
 from login import *
 
@@ -59,6 +60,12 @@ def vk_load_pictur(photo_name):
         else:
             with open(new_name, "wb") as fl:
                 fl.write(upl.content)
+            text = "Test_Bot"
+            img = Image.open(new_name)
+            draw = ImageDraw.Draw(img)
+            font = ImageFont.truetype("arial.ttf", 25)
+            draw.text((10, 25), text, font=font, fill=(0, 0, 0, 200))
+            img.save(new_name)
             try:
                 upld = upload.photo_messages(new_name)[0]
             except vk_api.exceptions.ApiError:
