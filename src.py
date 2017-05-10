@@ -4,12 +4,12 @@ import json
 import requests
 import os
 import re
+import shelve
 import collections
 from PIL import ImageFont, ImageDraw, Image
 from lxml import html
 from login import *
 
-que = collections.defaultdict(lambda: collections.deque([], 10))
 
 def write_msg(user_id, s):
     vk.method('messages.send', {'user_id': user_id, 'message': s})
@@ -24,7 +24,7 @@ def is_user_memb(user_id):
 
 
 def is_consol(body):
-    comm = re.match(r":(history|історія|история)$", body)
+    comm = re.match(r":(history|історія|история)$", body, re.I)
     if comm:
         return comm.group(0)
     else:
@@ -53,19 +53,23 @@ def vk_load_pictur(photo_name):
         new_name = str(i) + os.path.splitext(img)[1]
         try:
             res = re.search(r"[\d]*[.](jpeg|png|jpg|gif)",
-                            new_name)  ###################################################################
+                            new_name,re.I)  ###################################################################
             new_name = res.group(0)
         except AttributeError:
             pass
         else:
             with open(new_name, "wb") as fl:
                 fl.write(upl.content)
-            text = "Test_Bot"
-            img = Image.open(new_name)
-            draw = ImageDraw.Draw(img)
-            font = ImageFont.truetype("arial.ttf", 25)
-            draw.text((10, 25), text, font=font, fill=(0, 0, 0, 200))
-            img.save(new_name)
+            try:
+                text = "Test_Bot"
+                img = Image.open(new_name)
+                size = img.size
+                draw = ImageDraw.Draw(img)
+                font = ImageFont.truetype("arial.ttf", int(size[0]*0.02))
+                draw.text((0, 0), text, font=font, fill=(0, 0, 0, 200))
+                img.save(new_name)
+            except IndexError:
+                pass
             try:
                 upld = upload.photo_messages(new_name)[0]
             except vk_api.exceptions.ApiError:
@@ -117,7 +121,12 @@ def send_info(user_id, valid_info):
 def send_answer(user_id, body):
     info = vk_create_info(get_GoogleInfo(body))
     img = vk_load_pictur(get_GooglePicture(body))
-    que[user_id].append([info, img])
+
+    res = que.setdefault(str(user_id), collections.deque([], 10))
+    res.append([info, img])
+    que[str(user_id)] = res
+
+    que.sync()
     if info:
         send_info(user_id, info)
     else:
@@ -129,9 +138,10 @@ def send_answer(user_id, body):
 
 
 def send_cons(user_id, cons):
-    for mem in que[user_id]:
-        send_info(user_id, mem[0])
-        send_photo(user_id, mem[1])
+    if que.get(str(user_id)):
+        for mem in que[str(user_id)]:
+            send_info(user_id, mem[0])
+            send_photo(user_id, mem[1])
 
 
 def run():
@@ -155,6 +165,7 @@ if __name__ == "__main__":
     vk = vk_api.VkApi(token=token)
     vk.auth()
     upload = vk_api.VkUpload(vk)
+    que = shelve.open("res")
     run()
 
 
