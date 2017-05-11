@@ -53,23 +53,23 @@ def vk_load_pictur(photo_name):
         new_name = str(i) + os.path.splitext(img)[1]
         try:
             res = re.search(r"[\d]*[.](jpeg|png|jpg|gif)",
-                            new_name,re.I)  ###################################################################
+                            new_name, re.I) #Можлива валідація
             new_name = res.group(0)
         except AttributeError:
             pass
         else:
             with open(new_name, "wb") as fl:
                 fl.write(upl.content)
-            try:
-                text = "Test_Bot"
-                img = Image.open(new_name)
-                size = img.size
-                draw = ImageDraw.Draw(img)
-                font = ImageFont.truetype("arial.ttf", int(size[0]*0.02))
-                draw.text((0, 0), text, font=font, fill=(0, 0, 0, 200))
-                img.save(new_name)
-            except IndexError:
-                pass
+            # text = "Test_Bot"
+            # try:
+            #     img = Image.open(new_name)
+            #     size = img.size
+            #     draw = ImageDraw.Draw(img)
+            #     font = ImageFont.truetype("arial.ttf", int(size[0]*0.02))
+            #     draw.text((0, 0), text, font=font, fill=(0, 0, 0, 200))
+            #     img.save(new_name)
+            # except:
+            #     pass
             try:
                 upld = upload.photo_messages(new_name)[0]
             except vk_api.exceptions.ApiError:
